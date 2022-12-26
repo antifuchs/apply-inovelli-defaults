@@ -13,7 +13,8 @@ pub(super) struct BridgeInfo {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub(super) struct BridgeDevice {
-    pub friendly_name: String,
+    #[serde(rename = "friendly_name")]
+    pub topic_name: String,
     pub ieee_address: String,
     supported: bool,
     // TODO: even more other fields that would be useful

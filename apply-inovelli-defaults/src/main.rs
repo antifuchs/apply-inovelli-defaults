@@ -19,9 +19,10 @@ async fn main() -> anyhow::Result<()> {
     tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
     tracing::debug!(cmdline = ?args, "Starting");
 
-    let conn = apply_inovelli_defaults::Connection::connect(&args.zigbee2mqtt_url)
+    let mut conn = apply_inovelli_defaults::Connection::connect(&args.zigbee2mqtt_url)
         .await
         .context("Can't connect to zigbee2mqtt websocket endpoint")?;
     tracing::info!(addr = %args.zigbee2mqtt_url, conn=?conn, "Connected");
+    conn.update_loop().await?;
     Ok(())
 }
