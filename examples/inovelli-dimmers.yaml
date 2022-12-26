@@ -1,0 +1,39 @@
+# This configuration file increases the interval of active power
+# reports (which flood the network) on switches with a netural, and
+# sets the button delay to 0.
+
+- name: "Dimmers with a neutral"
+  condition:
+    powerType: "Neutral"
+    outputMode: "Dimmer"
+  values:
+    # Act immediately:
+    buttonDelay: "0ms"
+    # Definitely don't click:
+    relayClick: "Enabled (Click Sound Off)"
+    # Show the dim level indicator for a little while:
+    loadLevelIndicatorTimeout: "1 Second"
+    # Don't flood the network with power reports, only report every 10min:
+    periodicPowerAndEnergyReports: 600
+
+- name: "non-neutral Dimmers"
+  condition:
+    outputMode: "Dimmer"
+  values:
+    # Act immediately:
+    buttonDelay: "0ms"
+    # Definitely don't click:
+    relayClick: "Enabled (Click Sound Off)"
+    # Show the dim level indicator for a little while:
+    loadLevelIndicatorTimeout: "1 Second"
+
+- name: "Any switch on a neutral"
+  condition:
+    powerType: "Neutral"
+  values:
+    # Act immediately:
+    buttonDelay: "0ms"
+    # Definitely don't click:
+    relayClick: "Enabled (Click Sound Off)"
+    # Don't flood the network with power reports, only report every 10min:
+    periodicPowerAndEnergyReports: 600

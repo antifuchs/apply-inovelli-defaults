@@ -1,4 +1,5 @@
 use anyhow::Context;
+use config::ConfigClause;
 use core::fmt;
 use std::collections::{HashMap, HashSet};
 
@@ -11,6 +12,7 @@ use tokio::net::TcpStream;
 use tokio_tungstenite::{connect_async, MaybeTlsStream, WebSocketStream};
 use url::Url;
 
+pub mod config;
 mod init_messages;
 mod messages;
 
@@ -53,7 +55,7 @@ enum Z2mMessage {
 /// A zigbee2mqtt websocket message that we send to the endpoint.
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(untagged)]
-enum Z2mUpdate {
+pub(crate) enum Z2mUpdate {
     Refresh {
         topic: String,
         payload: HashMap<String, serde_json::Value>,
@@ -158,17 +160,23 @@ impl Connection {
         Ok(self.write.send(update).await?)
     }
 
-    pub async fn update_loop(&mut self) -> anyhow::Result<Never> {
+    pub async fn update_loop(&mut self, config: Vec<ConfigClause>) -> anyhow::Result<Never> {
         loop {
             match read_message(&mut self.read)
                 .await
                 .context("Reading message in main loop")?
             {
                 Z2mMessage::Update { topic, payload } => {
-                    tracing::debug!(%topic, ?payload, "device update");
+                    tracing::trace!(%topic, ?payload, "device update");
+                    if let Some((rule_name, values)) =
+                        config.iter().find_map(|clause| clause.update_for(&payload))
+                    {
+                        let topic = format!("{topic}/set");
+                        tracing::info!(%topic, %rule_name, ?values, "Would update");
+                    }
                 }
                 Z2mMessage::Log { topic, payload } => {
-                    tracing::debug!(%topic, %payload.level, %payload.message);
+                    tracing::trace!(%topic, %payload.level, %payload.message);
                 }
                 msg => tracing::trace!(?msg, "received message"),
             }
