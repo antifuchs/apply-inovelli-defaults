@@ -12,4 +12,23 @@ documentation = "https://docs.rs/apply-inovelli-defaults"
 [badges]
 maintenance = { status = "passively-maintained" }
 
+[lib]
+name = "apply_inovelli_defaults"
+path = "src/lib.rs"
+
+[[bin]]
+name = "apply-inovelli-defaults"
+path = "src/main.rs"
+
 [dependencies]
+tokio-tungstenite = { version = "0.18.0", features = ["native-tls"] }
+tokio = { version = "1.23.0", features = ["full"] }
+tracing = "0.1.37"
+tracing-subscriber = "0.2.0"
+clap = { version = "4.0.32", features = ["derive"] }
+url = { version = "2.3.1", features = ["serde"] }
+anyhow = "1.0.68"
+serde = { version = "1.0.151", features = ["derive"] }
+futures-util = "0.3.25"
+futures = "0.3.25"
+serde_json = "1.0.91"
