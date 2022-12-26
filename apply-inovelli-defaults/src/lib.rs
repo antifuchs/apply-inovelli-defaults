@@ -36,11 +36,6 @@ enum Z2mInitMessage {
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(untagged)]
 enum Z2mMessage {
-    /// An optimization message that gives the device's state (on/off/available/etc).
-    State {
-        payload: messages::State,
-        topic: String,
-    },
     /// A log message from zigbee2mqtt.
     Log {
         payload: messages::Log,
@@ -61,7 +56,7 @@ enum Z2mMessage {
 enum Z2mUpdate {
     Refresh {
         topic: String,
-        payload: messages::RefreshUpdate,
+        payload: HashMap<String, serde_json::Value>,
     },
 }
 
@@ -164,37 +159,17 @@ impl Connection {
     }
 
     pub async fn update_loop(&mut self) -> anyhow::Result<Never> {
-        let topics: Vec<String> = self
-            .devices
-            .iter()
-            .map(|dev| format!("{}/get", dev))
-            .collect();
-        for topic in topics {
-            self.send_update(Z2mUpdate::Refresh {
-                topic,
-                payload: messages::RefreshUpdate {
-                    state: "".to_string(),
-                },
-            })
-            .await?;
-        }
         loop {
             match read_message(&mut self.read)
                 .await
                 .context("Reading message in main loop")?
             {
-                Z2mMessage::State {
-                    topic,
-                    payload: messages::State { state },
-                } => {
-                    tracing::trace!(%topic, %state, "state message");
-                }
                 Z2mMessage::Update { topic, payload } => {
-                    tracing::info!(%topic, ?payload, "device update");
+                    tracing::debug!(%topic, ?payload, "device update");
                 }
-                // Z2mMessage::Log { topic, payload } => {
-                //     tracing::debug!(%topic, %payload.level, %payload.message);
-                // }
+                Z2mMessage::Log { topic, payload } => {
+                    tracing::debug!(%topic, %payload.level, %payload.message);
+                }
                 msg => tracing::trace!(?msg, "received message"),
             }
         }
