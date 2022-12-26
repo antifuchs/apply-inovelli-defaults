@@ -1,0 +1,15 @@
+[package]
+edition = '2021'
+name = "apply-inovelli-defaults"
+version = "0.0.1-dev"
+authors = ["Andreas Fuchs <asf@boinkor.net>"]
+license = "MIT"
+repository = "https://github.com/antifuchs/apply-inovelli-defaults"
+readme = "README.md"
+description = "Apply default configuration to many Inovelli switches on a zigbee2mqtt network"
+documentation = "https://docs.rs/apply-inovelli-defaults"
+
+[badges]
+maintenance = { status = "passively-maintained" }
+
+[dependencies]
