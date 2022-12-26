@@ -118,7 +118,7 @@ impl Connection {
     pub async fn connect(address: &Url) -> anyhow::Result<Self> {
         let (ws_stream, _) = connect_async(address).await?;
         let (write, read) = ws_stream.split();
-        Ok(Self::populate(read, write, address).await?)
+        Self::populate(read, write, address).await
     }
 
     async fn populate(
@@ -154,6 +154,7 @@ impl Connection {
         })
     }
 
+    #[allow(dead_code)] // TODO: remove once this is no longer dry-run only
     async fn send_update(&mut self, update: Z2mUpdate) -> anyhow::Result<()> {
         let update = update.try_into()?;
         tracing::debug!(?update, "sending update");
