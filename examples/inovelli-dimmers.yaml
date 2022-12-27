@@ -14,6 +14,12 @@
     loadLevelIndicatorTimeout: "1 Second"
     # Don't flood the network with power reports, only report every 10min:
     periodicPowerAndEnergyReports: 600
+    # Only light up a single LED when "off" indication is set:
+    onOffLedMode: "One"
+    # if off indication is set, light up in red (best to not disturb night vision):
+    ledColorWhenOff: 0
+    ledColorWhenOn: 0
+
     # Take 4 seconds to dim all the way from 0 to 100%:
     dimmingSpeedUpRemote: 40
     dimmingSpeedUpLocal: 127
