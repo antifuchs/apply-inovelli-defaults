@@ -82,14 +82,18 @@ pub struct Connection {
     read: SplitStream<WebSocketStream<MaybeTlsStream<TcpStream>>>,
     pub version: String,
     pub devices: HashSet<String>,
+    real: bool,
 }
 
 impl fmt::Debug for Connection {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "Connection @{} v:{} devs:{:?}",
-            self.url, self.version, self.devices
+            "{}Connection @{} v:{} devs:{:?}",
+            if self.real { "Real " } else { "" },
+            self.url,
+            self.version,
+            self.devices
         )
     }
 }
@@ -115,10 +119,10 @@ async fn read_message<'de, T: serde::de::DeserializeOwned + fmt::Debug>(
 
 impl Connection {
     /// Connects to a zigbee2mqtt websocket stream.
-    pub async fn connect(address: &Url) -> anyhow::Result<Self> {
+    pub async fn connect(address: &Url, real: bool) -> anyhow::Result<Self> {
         let (ws_stream, _) = connect_async(address).await?;
         let (write, read) = ws_stream.split();
-        Self::populate(read, write, address).await
+        Self::populate(read, write, address, real).await
     }
 
     async fn populate(
@@ -128,6 +132,7 @@ impl Connection {
             tokio_tungstenite::tungstenite::Message,
         >,
         url: &Url,
+        real: bool,
     ) -> anyhow::Result<Self> {
         let mut read = read;
         let Z2mInitMessage::BridgeState{..} = read_message(&mut read).await? else {
@@ -151,17 +156,22 @@ impl Connection {
             url: url.clone(),
             version,
             devices: devices.into_iter().map(|dev| dev.topic_name).collect(),
+            real,
         })
     }
 
-    #[allow(dead_code)] // TODO: remove once this is no longer dry-run only
     async fn send_update(&mut self, update: Z2mUpdate) -> anyhow::Result<()> {
+        if !self.real {
+            tracing::info!(?update, "Would send");
+            return Ok(());
+        }
         let update = update.try_into()?;
         tracing::debug!(?update, "sending update");
         Ok(self.write.send(update).await?)
     }
 
     pub async fn update_loop(&mut self, config: Vec<ConfigClause>) -> anyhow::Result<Never> {
+        let mut done = HashSet::new();
         loop {
             match read_message(&mut self.read)
                 .await
@@ -169,15 +179,22 @@ impl Connection {
             {
                 Z2mMessage::Update { topic, payload } => {
                     tracing::trace!(%topic, ?payload, "device update");
-                    if let Some((rule_name, values)) =
+                    if done.contains(&topic) {
+                        continue;
+                    }
+                    if let Some((rule_name, payload)) =
                         config.iter().find_map(|clause| clause.update_for(&payload))
                     {
+                        tracing::info!(?topic, ?rule_name, "matched");
+                        done.insert(topic.to_string());
                         let topic = format!("{topic}/set");
-                        tracing::info!(%topic, %rule_name, ?values, "Would update");
+
+                        self.send_update(Z2mUpdate::Refresh { topic, payload })
+                            .await?;
                     }
                 }
                 Z2mMessage::Log { topic, payload } => {
-                    tracing::trace!(%topic, %payload.level, %payload.message);
+                    tracing::debug!(%topic, %payload.level, %payload.message);
                 }
                 msg => tracing::trace!(?msg, "received message"),
             }

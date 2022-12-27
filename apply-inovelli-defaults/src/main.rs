@@ -12,6 +12,8 @@ struct Args {
     /// The address of the websocket endpoint for your zigbee2mqtt installation
     zigbee2mqtt_url: Url,
     config_file: PathBuf,
+    #[clap(short, long, default_value = "false")]
+    real: bool,
 }
 
 #[tokio::main]
@@ -26,7 +28,7 @@ async fn main() -> anyhow::Result<()> {
     let config: Vec<config::ConfigClause> = serde_yaml::from_reader(config_file)
         .with_context(|| format!("Parsing config file {:?}", &args.config_file))?;
 
-    let mut conn = apply_inovelli_defaults::Connection::connect(&args.zigbee2mqtt_url)
+    let mut conn = apply_inovelli_defaults::Connection::connect(&args.zigbee2mqtt_url, args.real)
         .await
         .context("Can't connect to zigbee2mqtt websocket endpoint")?;
     tracing::info!(addr = %args.zigbee2mqtt_url, conn=?conn, "Connected");
