@@ -54,21 +54,29 @@ enum Z2mMessage {
 
 /// A zigbee2mqtt websocket message that we send to the endpoint.
 #[derive(Serialize, Deserialize, Debug)]
-#[serde(untagged)]
-pub(crate) enum Z2mUpdate {
-    Refresh {
-        topic: String,
-        payload: HashMap<String, serde_json::Value>,
-    },
+pub(crate) struct Z2mUpdate {
+    topic: String,
+    payload: HashMap<String, serde_json::Value>,
 }
 
-impl TryInto<tokio_tungstenite::tungstenite::Message> for Z2mUpdate {
+impl TryInto<Vec<tokio_tungstenite::tungstenite::Message>> for Z2mUpdate {
     type Error = serde_json::Error;
 
-    fn try_into(self) -> Result<tokio_tungstenite::tungstenite::Message, Self::Error> {
-        Ok(tokio_tungstenite::tungstenite::Message::Text(
-            serde_json::to_string(&self)?,
-        ))
+    fn try_into(self) -> Result<Vec<tokio_tungstenite::tungstenite::Message>, Self::Error> {
+        let topic = self.topic;
+        Ok(self
+            .payload
+            .into_iter()
+            .map(|(k, v)| {
+                let update = Z2mUpdate {
+                    topic: topic.clone(),
+                    payload: HashMap::from([(k, v)]),
+                };
+                tokio_tungstenite::tungstenite::Message::Text(
+                    serde_json::to_string(&update).expect("Could not convert to JSON"),
+                )
+            })
+            .collect())
     }
 }
 
@@ -165,9 +173,12 @@ impl Connection {
             tracing::info!(?update, "Would send");
             return Ok(());
         }
-        let update = update.try_into()?;
-        tracing::debug!(?update, "sending update");
-        Ok(self.write.send(update).await?)
+        let messages: Vec<tokio_tungstenite::tungstenite::Message> = update.try_into()?;
+        for message in messages {
+            tracing::debug!(?message, "sending update");
+            self.write.send(message).await?;
+        }
+        Ok(())
     }
 
     pub async fn update_loop(&mut self, config: Vec<ConfigClause>) -> anyhow::Result<Never> {
@@ -189,12 +200,11 @@ impl Connection {
                         done.insert(topic.to_string());
                         let topic = format!("{topic}/set");
 
-                        self.send_update(Z2mUpdate::Refresh { topic, payload })
-                            .await?;
+                        self.send_update(Z2mUpdate { topic, payload }).await?;
                     }
                 }
                 Z2mMessage::Log { topic, payload } => {
-                    tracing::debug!(%topic, %payload.level, %payload.message);
+                    tracing::trace!(%topic, %payload.level, %payload.message);
                 }
                 msg => tracing::trace!(?msg, "received message"),
             }
