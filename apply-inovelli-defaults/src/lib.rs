@@ -44,7 +44,10 @@ enum Z2mMessage {
         topic: String,
     },
     /// A "null" message that seems to delineate some message group boundary. Unused.
-    Null { payload: String, topic: String },
+    Null {
+        payload: Option<String>,
+        topic: String,
+    },
     /// An "update" message returning the current values for a device in the network.
     Update {
         payload: HashMap<String, serde_json::Value>,
