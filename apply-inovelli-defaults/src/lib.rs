@@ -171,20 +171,43 @@ impl Connection {
         })
     }
 
-    async fn send_update(&mut self, update: Z2mUpdate) -> anyhow::Result<()> {
+    async fn send_update(
+        &mut self,
+        update: Z2mUpdate,
+        rate_limiter: &Option<
+            governor::RateLimiter<
+                governor::state::NotKeyed,
+                governor::state::InMemoryState,
+                governor::clock::DefaultClock,
+            >,
+        >,
+    ) -> anyhow::Result<()> {
         if !self.real {
             tracing::info!(?update, "Would send");
             return Ok(());
         }
         let messages: Vec<tokio_tungstenite::tungstenite::Message> = update.try_into()?;
         for message in messages {
+            if let Some(limiter) = rate_limiter.as_ref() {
+                limiter.until_ready().await;
+            }
             tracing::debug!(?message, "sending update");
             self.write.send(message).await?;
         }
         Ok(())
     }
 
-    pub async fn update_loop(&mut self, config: Vec<ConfigClause>) -> anyhow::Result<Never> {
+    pub async fn update_loop(
+        &mut self,
+        config: Vec<ConfigClause>,
+        rate_limiter: Option<
+            governor::RateLimiter<
+                governor::state::NotKeyed,
+                governor::state::InMemoryState,
+                governor::clock::DefaultClock,
+            >,
+        >,
+    ) -> anyhow::Result<Never> {
         let mut done = HashSet::new();
         loop {
             match read_message(&mut self.read)
@@ -203,7 +226,8 @@ impl Connection {
                         done.insert(topic.to_string());
                         let topic = format!("{topic}/set");
 
-                        self.send_update(Z2mUpdate { topic, payload }).await?;
+                        self.send_update(Z2mUpdate { topic, payload }, &rate_limiter)
+                            .await?;
                     }
                 }
                 Z2mMessage::Log { topic, payload } => {
