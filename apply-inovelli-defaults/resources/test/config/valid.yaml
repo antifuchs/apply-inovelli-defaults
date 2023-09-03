@@ -1,0 +1,5 @@
+- name: test_valid
+  condition:
+    mode: test
+  values:
+    test: 0

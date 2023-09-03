@@ -113,8 +113,8 @@ async fn read_message<'de, T: serde::de::DeserializeOwned + fmt::Debug>(
     read: &mut SplitStream<WebSocketStream<MaybeTlsStream<TcpStream>>>,
 ) -> anyhow::Result<T> {
     let Some(next) = read.next().await else {
-            anyhow::bail!("No next message - counterparty hung up?");
-        };
+        anyhow::bail!("No next message - counterparty hung up?");
+    };
     let message = next.context("Error receiving next message")?;
     let data = message.into_data();
     let message =
@@ -146,19 +146,22 @@ impl Connection {
         real: bool,
     ) -> anyhow::Result<Self> {
         let mut read = read;
-        let Z2mInitMessage::BridgeState{..} = read_message(&mut read).await? else {
+        let Z2mInitMessage::BridgeState { .. } = read_message(&mut read).await? else {
             anyhow::bail!("Could not read init bridge state");
         };
-        let Z2mInitMessage::BridgeInfo{payload: init_messages::BridgeInfo{version}} = read_message(&mut read).await? else {
+        let Z2mInitMessage::BridgeInfo {
+            payload: init_messages::BridgeInfo { version },
+        } = read_message(&mut read).await?
+        else {
             anyhow::bail!("Could not read init bridge state");
         };
-        let Z2mInitMessage::Devices{payload: devices} = read_message(&mut read).await? else {
+        let Z2mInitMessage::Devices { payload: devices } = read_message(&mut read).await? else {
             anyhow::bail!("Could not read the bridge's devices");
         };
-        let Z2mInitMessage::Groups{} = read_message(&mut read).await? else {
+        let Z2mInitMessage::Groups {} = read_message(&mut read).await? else {
             anyhow::bail!("Could not read the bridge's groups");
         };
-        let Z2mInitMessage::Extensions{} = read_message(&mut read).await? else {
+        let Z2mInitMessage::Extensions {} = read_message(&mut read).await? else {
             anyhow::bail!("Could not read the bridge's extensions");
         };
         Ok(Self {
