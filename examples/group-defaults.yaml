@@ -1,0 +1,21 @@
+# Example for how to use yaml anchors and references to apply defaults across groups
+
+- name: "Global Defaults"
+  # the condition does not match anything, this group is just to hold defaults
+  condition:
+    dummy: true
+  values: &defaults
+    smartBulbMode: "Smart Bulb Mode"
+    buttonDelay: "0ms"
+    relayClick: "Enabled (Click Sound Off)"
+
+- name: "On/off switches"
+  condition:
+    outputMode: "On/Off"
+  values:
+    # use the values from above in this group
+    <<: *defaults
+    # override a default value
+    buttonDelay: "100ms"
+    # add new values too
+    periodicPowerAndEnergyReports: 600

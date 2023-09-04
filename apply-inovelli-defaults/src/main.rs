@@ -1,4 +1,4 @@
-use std::{fs::File, path::PathBuf};
+use std::path::PathBuf;
 
 use anyhow::Context;
 use apply_inovelli_defaults::config;
@@ -33,9 +33,9 @@ async fn main() -> anyhow::Result<()> {
         .finish();
     tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
     tracing::debug!(cmdline = ?args, "Starting");
-    let config_file = File::open(&args.config_file)?;
-    let config: Vec<config::ConfigClause> = serde_yaml::from_reader(config_file)
-        .with_context(|| format!("Parsing config file {:?}", &args.config_file))?;
+
+    let config = config::load(&args.config_file)
+        .with_context(|| format!("Loading config file {:?}", &args.config_file))?;
 
     let mut conn = apply_inovelli_defaults::Connection::connect(&args.zigbee2mqtt_url, args.real)
         .await
