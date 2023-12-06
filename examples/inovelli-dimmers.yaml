@@ -20,16 +20,16 @@
     ledColorWhenOff: 0
     ledColorWhenOn: 0
 
-    # Take 4 seconds to dim all the way from 0 to 100%:
-    dimmingSpeedUpRemote: 40
+    # Take 3 seconds to dim all the way from 0 to 100%:
+    dimmingSpeedUpRemote: 30
     dimmingSpeedUpLocal: 127
     dimmingSpeedDownLocal: 127
     dimmingSpeedDownRemote: 127
-    # Take 2 seconds to get to full brightness from zero and back:
-    rampRateOffToOnRemote: 20
-    rampRateOffToOnLocal: 20
-    rampRateOnToOffRemote: 20
-    rampRateOnToOffLocal: 20
+    # Take 0.7 seconds to get to full brightness from zero and back:
+    rampRateOffToOnRemote: 7
+    rampRateOffToOnLocal: 7
+    rampRateOnToOffRemote: 7
+    rampRateOnToOffLocal: 7
 
 - name: "On/off switches"
   condition:
