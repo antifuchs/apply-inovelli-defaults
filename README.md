@@ -1,5 +1,10 @@
 ![Build Status](https://github.com/antifuchs/apply-inovelli-defaults/actions/workflows/ci.yml/badge.svg)
 
+> [!WARNING]
+> Beware that this tool is extremely "works for me"; I used it successfully a
+> few times and have now abandoned it as I no longer have Inovelli switches in
+> my walls.
+
 # A tool for applying common configuration values to devices in zigbee2mqtt
 
 I use a bunch of [Inovelli
@@ -21,8 +26,8 @@ for an example config file that I use to set up my switches.
 
 # Caution
 
-Beware that this tool is heavily under development, and will
-absolutely destroy your switches if given the exactly right config
+If you use this, it will absolutely destroy your switches (possibly causing 
+fires and other exciting electrical problems) if given wrong-enough config
 parameters. If it breaks anything, you get to keep both parts.
 
 This tool is written in Rust (which let me write this over the course
